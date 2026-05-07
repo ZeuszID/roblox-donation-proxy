@@ -1,0 +1,148 @@
+// ⚠️ GANTI DENGAN SPREADSHEET ID ANDA
+var SPREADSHEET_ID = "17thAyK-5tmU834REPSqzFm6GloAT4NmrgTH_Bw9dzt8"; 
+var SHEET_NAME = "Sheet1";
+
+var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+var sheet = ss.getSheetByName(SHEET_NAME);
+
+// ========================================
+	// HANDLE WEBHOOK POST REQUEST
+// ========================================
+	function doPost(e) {
+		try {
+			Logger.log("========================================");
+			Logger.log("📥 INCOMING WEBHOOK REQUEST");
+			Logger.log("Time: " + new Date());
+			Logger.log("========================================");
+
+			if (!sheet) {
+				throw new Error("Sheet tidak ditemukan!");
+				}
+
+				if (!e || !e.postData || !e.postData.contents) {
+					Logger.log("⚠️ Empty or invalid request");
+					throw new Error("Request tidak valid");
+					}
+
+					Logger.log("📦 Raw Data: " + e.postData.contents);
+
+					var data = JSON.parse(e.postData.contents);
+
+					Logger.log("✅ Data parsed successfully:");
+					Logger.log("   ID: " + (data.id || "N/A"));
+					Logger.log("   Donator: " + (data.donator_name || "Anonymous"));
+					Logger.log("   Amount: " + (data.amount_raw || 0));
+					Logger.log("   Message: " + (data.message || ""));
+
+					var id = data.id || "N/A";
+					var donator = data.donator_name || "Anonymous";
+					var amount = data.amount_raw || 0;
+					var message = data.message || "";
+					var date = new Date();
+
+					sheet.appendRow([id, donator, amount, message, date]);
+					Logger.log("✅ Data saved to spreadsheet");
+					Logger.log("========================================");
+
+					return ContentService.createTextOutput(JSON.stringify({
+						status: "success",
+						message: "Donasi berhasil dicatat!",
+						data: {
+							id: id,
+							donator: donator,
+							amount: amount
+						}
+					})).setMimeType(ContentService.MimeType.JSON);
+
+		} catch (error) {
+			Logger.log("❌ ERROR: " + error.toString());
+			Logger.log("========================================");
+
+			return ContentService.createTextOutput(JSON.stringify({
+				status: "error", 
+				message: error.toString()
+			})).setMimeType(ContentService.MimeType.JSON);
+		}
+		}
+
+		// ========================================
+		// HANDLE GET REQUEST (untuk Roblox)
+		// ========================================
+		function doGet(e) {
+			try {
+				if (!sheet) {
+					throw new Error("Sheet tidak ditemukan");
+				}
+
+				var rows = sheet.getDataRange().getValues();
+				var result = [];
+
+				for (var i = 1; i < rows.length; i++) {
+					result.push({
+						id: rows[i][0],
+						donator: rows[i][1],
+						amount: rows[i][2],
+						message: rows[i][3],
+						date: rows[i][4]
+					});
+					}
+
+					return ContentService.createTextOutput(JSON.stringify({
+						status: "success",
+						total: result.length,
+						data: result
+					})).setMimeType(ContentService.MimeType.JSON);
+
+			} catch (error) {
+				return ContentService.createTextOutput(JSON.stringify({
+					status: "error",
+					message: error.toString()
+				})).setMimeType(ContentService.MimeType.JSON);
+			}
+			}
+
+			// ========================================
+			// FUNGSI TEST WEBHOOK
+			// ========================================
+			function testSaweriaWebhook() {
+				var testData = {
+					id: "test_" + new Date().getTime(),
+					donator_name: "zt",
+					amount_raw: 1000000,
+					message: "Test dari Apps Script"
+				};
+
+				var testEvent = {
+					postData: {
+						contents: JSON.stringify(testData)
+					}
+				};
+
+				Logger.log("🧪 Testing webhook with data:");
+				Logger.log(JSON.stringify(testData));
+
+				var response = doPost(testEvent);
+				Logger.log("📤 Response:");
+				Logger.log(response.getContent());
+				}
+
+				// ========================================
+				// FUNGSI TEST KONEKSI
+				// ========================================
+				function testConnection() {
+					Logger.log("🧪 TESTING CONNECTION");
+					Logger.log("Spreadsheet ID: " + SPREADSHEET_ID);
+					Logger.log("Sheet Name: " + SHEET_NAME);
+					Logger.log("Sheet found: " + (sheet != null));
+
+					if (sheet) {
+						Logger.log("Last row: " + sheet.getLastRow());
+
+						var testId = "manual_test_" + new Date().getTime();
+						sheet.appendRow([testId, "zt", 1000000, "Test message", new Date()]);
+						Logger.log("✅ Test data inserted!");
+						Logger.log("Test ID: " + testId);
+						} else {
+	Logger.log("❌ Sheet not found!");
+	}
+	}
